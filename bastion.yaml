@@ -1,3 +1,11 @@
+# INCIDENT RESPONSE PLAYBOOK:
+# 1. Detect unusual network activity
+# 2. Isolate the bastion host by changing its security group
+# 3. Apply BastionIsolationSG to block all inbound and outbound traffic
+# 4. Save logs and system data for investigation
+# 5. Check SSH logs, running processes, and network connections
+# 6. Find the cause of the issue and confirm it is safe before restoring access
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'AWS CloudFormation Template for a single-instance bastion host'
 Parameters:
@@ -72,6 +80,7 @@ Resources:
       ImageId: !Ref LatestAmiId
       InstanceType:
         !FindInMap [EnvironmentTypeToInstanceType, !Ref EnvironmentType, InstanceType]
+      # Allows SSH access to the bastion host
       SecurityGroups: 
         - !Ref 'InboundAccessSecurityGroup'
       KeyName: !Ref 'KeyName'
@@ -84,6 +93,17 @@ Resources:
         FromPort: 22
         ToPort: 22
         CidrIp: 0.0.0.0/0
+  BastionIsolationSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Fully isolates bastion host (no inbound or outbound traffic)"
+      VpcId: !Ref VPC
+
+      # No inbound rules = no incoming traffic allowed
+      SecurityGroupIngress: []
+
+      # No outbound rules = blocks all internet + VPC traffic
+      SecurityGroupEgress: []
 
 Outputs:
   InstanceId:
